@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test-sqlite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: pytest -q
+
+  test-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: dora
+          POSTGRES_PASSWORD: dora
+          POSTGRES_DB: dora
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U dora"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Run test suite against Postgres
+        env:
+          DATABASE_URL: postgresql://dora:dora@localhost:5432/dora
+        run: pytest -q
+      - name: Smoke-test seed + Metrics API against Postgres
+        env:
+          DATABASE_URL: postgresql://dora:dora@localhost:5432/dora
+        run: |
+          python scripts/seed_demo_data.py acme/widgets
+          python -c "
+          from fastapi.testclient import TestClient
+          from dora.api.main import app
+          client = TestClient(app)
+          r = client.get('/repos/acme/widgets/health')
+          assert r.status_code == 200, r.text
+          print('Postgres-backed API smoke test passed:', list(r.json().keys()))
+          "

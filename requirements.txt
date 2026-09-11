@@ -6,3 +6,7 @@ python-dateutil>=2.9
 python-dotenv>=1.0
 typer>=0.12
 anthropic>=0.68
+sqlalchemy>=2.0
+psycopg2-binary>=2.9
+fastapi>=0.115
+uvicorn>=0.30

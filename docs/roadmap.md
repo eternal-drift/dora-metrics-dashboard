@@ -33,11 +33,13 @@ items build on earlier ones.
   directly from Streamlit/CLI), conversation persistence, vector-DB RAG for
   a larger knowledge corpus, streaming responses.
 
-## Then: real backing services
+## Done: Postgres, Metrics API, Docker Compose, CI
 
-- **Postgres migration** ([ADR 0001](adr/0001-storage-sqlite-then-postgres.md)) — triggered by the Advisor needing concurrent read access alongside interactive ingestion/dashboard use.
-- **Metrics API (FastAPI)** in front of `dora/metrics` — triggered by the Advisor becoming a second consumer of metrics alongside the dashboard ([ADR 0004](adr/0004-streamlit-before-react.md)).
-- **Docker Compose** (app + Postgres, one-command local stack) and **GitHub Actions CI** (tests + lint on every PR) — cheap to add once the API exists, and the first real infra-credibility signal.
+- **Postgres** ([ADR 0001](adr/0001-storage-sqlite-then-postgres.md)) — `dora/storage/db.py` rewritten on SQLAlchemy Core; SQLite stays the default, set `DATABASE_URL` for Postgres. Verified against both a real `postgres:16-alpine` container and SQLite.
+- **Metrics API** (`dora/api/main.py`, FastAPI) — read-only HTTP surface over the same `dora.advisor.context` snapshot layer the Advisor's tools use, so the dashboard, Advisor, and API compute metrics one way ([ADR 0004](adr/0004-streamlit-before-react.md) update). Streamlit itself still calls the snapshot layer in-process — no second *UI* consumer yet, so it doesn't call the API over HTTP.
+- **Docker Compose** — `docker-compose.yml` brings up Postgres + the Metrics API + the Streamlit dashboard as one stack; built and run end-to-end (all three containers, real Postgres, seeded data, live API query) as part of shipping this.
+- **GitHub Actions CI** — `.github/workflows/ci.yml` runs the full test suite against both SQLite and a real Postgres service container, plus a seed+API smoke test on the Postgres job.
+- **Not yet done**: connection pooling tuning for concurrent load, migrations tooling (Alembic) — schema changes currently rely on `CREATE TABLE IF NOT EXISTS`, fine for additive changes, not for altering existing columns.
 
 ## Then: production-shaped infra
 

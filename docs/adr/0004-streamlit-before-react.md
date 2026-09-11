@@ -32,3 +32,15 @@ what that contract needs to look like.
   queries `dora/metrics` the same way `dashboard.py` does. This becomes a
   real constraint once the Advisor needs request-scoped or role-scoped
   metric access, which is the trigger described above.
+
+## Update: the trigger has been hit for the API, not yet for React
+
+The Advisor becoming a second consumer of metrics (see
+[ADR 0005](0005-advisor-tool-calling-over-vector-rag.md)) triggered the
+Metrics API half of this decision: `dora/api/main.py` (FastAPI) now serves
+metrics over HTTP, built on the same `dora.advisor.context` snapshot layer
+the Advisor's tools use — so the dashboard, the Advisor, and the API now
+all have a path to one shared computation, not three reimplementations.
+Streamlit itself still calls `dora.metrics`/`dora.advisor.context` directly
+rather than going through the API, since there's no second *UI* consumer
+yet — that's the still-unmet trigger for React specifically.

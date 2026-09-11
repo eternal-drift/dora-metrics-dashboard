@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: dora
+      POSTGRES_PASSWORD: dora
+      POSTGRES_DB: dora
+    ports:
+      - "5432:5432"
+    volumes:
+      - dora_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dora"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    command: uvicorn dora.api.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://dora:dora@postgres:5432/dora
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  dashboard:
+    build: .
+    ports:
+      - "8501:8501"
+    environment:
+      DATABASE_URL: postgresql://dora:dora@postgres:5432/dora
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ADVISOR_MODEL: ${ADVISOR_MODEL:-claude-opus-5}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  dora_pg_data:

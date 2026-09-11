@@ -98,6 +98,32 @@ Environment variables (see `dora/config.py`):
 | `DORA_HOTFIX_WINDOW_HOURS` | `24` | Change-failure-rate window |
 | `ANTHROPIC_API_KEY` | — | Enables the AI Engineering Advisor (see below) |
 | `ADVISOR_MODEL` | `claude-opus-5` | Model used by the Advisor |
+| `DATABASE_URL` | — (falls back to SQLite at `DORA_DB_PATH`) | Set to a `postgresql://...` URL to use Postgres instead of SQLite |
+
+## Metrics API
+
+A read-only FastAPI surface over the same metrics the dashboard and Advisor use (`dora/api/main.py`):
+
+```bash
+uvicorn dora.api.main:app --reload
+curl localhost:8000/repos/acme/widgets/health
+```
+
+## Running everything with Docker Compose
+
+Brings up Postgres, the Metrics API, and the Streamlit dashboard as one stack:
+
+```bash
+docker compose up --build
+# dashboard: http://localhost:8501, API: http://localhost:8000
+```
+
+Seed or ingest against the same Postgres instance from the host (the compose file
+publishes port 5432):
+
+```bash
+DATABASE_URL=postgresql://dora:dora@localhost:5432/dora python scripts/seed_demo_data.py acme/widgets
+```
 
 ## AI Engineering Advisor
 

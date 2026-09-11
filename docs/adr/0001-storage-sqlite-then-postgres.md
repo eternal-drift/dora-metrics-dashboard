@@ -34,3 +34,17 @@ following becomes true:
 - We accept that concurrent-write correctness (e.g. two ingestion jobs
   racing) is untested until the Postgres migration — this is a known gap,
   not an oversight.
+
+## Update (implemented)
+
+The Postgres path is now implemented, not just planned: `dora/storage/db.py`
+was rewritten against SQLAlchemy Core, and both dialects share one code
+path, including the upserts — SQLite (3.24+) and Postgres both support the
+same `INSERT ... ON CONFLICT (...) DO UPDATE SET col = excluded.col` syntax,
+so no dialect branch was needed. SQLite via `dora.db` (a plain file) stays
+the default; set `DATABASE_URL` (e.g.
+`postgresql://user:pass@host:5432/dora`) to switch to Postgres — see
+`docker-compose.yml` for a working example. Verified against both SQLite
+and a real `postgres:16-alpine` container: the full test suite, the
+seed script, and the Metrics API all pass unchanged against either backend
+(CI runs both — see `.github/workflows/ci.yml`).
