@@ -96,3 +96,21 @@ Environment variables (see `dora/config.py`):
 | `GITHUB_TOKEN` | — | GitHub API auth |
 | `DORA_DB_PATH` | `dora.db` | SQLite file location |
 | `DORA_HOTFIX_WINDOW_HOURS` | `24` | Change-failure-rate window |
+
+## Docs
+
+This project's ambitions go beyond the current dashboard — see
+[docs/roadmap.md](docs/roadmap.md) for where it's headed (an AI Engineering
+Advisor, a Metrics API, real backing services). The rest of `docs/` covers
+how the system is meant to be run and reasoned about as an engineering
+intelligence platform, not just a script:
+
+- [docs/metrics.md](docs/metrics.md) — full metric definitions and caveats
+- [docs/adr/](docs/adr/) — architecture decision records
+- [docs/vp-dashboard.md](docs/vp-dashboard.md) — the VP Engineering one-pager
+- [docs/engineering-health-scorecard.md](docs/engineering-health-scorecard.md) — per-metric status rules and a sample scorecard
+- [docs/quarterly-review.md](docs/quarterly-review.md) — a sample quarterly engineering review
+- [docs/before-after-intervention.md](docs/before-after-intervention.md) — a simulated before/after improvement story from the seeded demo data
+- [docs/cost-model.md](docs/cost-model.md) — infra cost at three scale points
+- [docs/threat-model.md](docs/threat-model.md) — STRIDE-style threat model, including insider misuse of per-person metrics
+- [docs/scalability-assumptions.md](docs/scalability-assumptions.md) — current scale assumptions and where they break
