@@ -45,6 +45,24 @@ CREATE TABLE IF NOT EXISTS deployments (
     raw JSON,
     PRIMARY KEY (repo, id)
 );
+
+-- Jira-style issue tracking events. There is no live Jira ingestion here
+-- (see dora/ingest/synthetic.py) -- rows come from synthetic data generated
+-- to exercise WIP/throughput/MTTR, which need work-item state transitions
+-- that the GitHub PR/release data doesn't carry.
+CREATE TABLE IF NOT EXISTS issues (
+    repo TEXT NOT NULL,
+    key TEXT NOT NULL,
+    issue_type TEXT,
+    status TEXT,
+    assignee TEXT,
+    priority TEXT,
+    created_at TEXT,
+    started_at TEXT,
+    resolved_at TEXT,
+    raw JSON,
+    PRIMARY KEY (repo, key)
+);
 """
 
 
@@ -105,6 +123,27 @@ def upsert_deployments(conn: sqlite3.Connection, repo: str, deployments: list[di
     )
 
 
+def upsert_issues(conn: sqlite3.Connection, repo: str, issues: list[dict]) -> None:
+    rows = [
+        (
+            repo, i["key"], i.get("issue_type"), i.get("status"), i.get("assignee"),
+            i.get("priority"), i.get("created_at"), i.get("started_at"), i.get("resolved_at"),
+            json.dumps(i),
+        )
+        for i in issues
+    ]
+    conn.executemany(
+        """INSERT INTO issues
+           (repo, key, issue_type, status, assignee, priority, created_at, started_at, resolved_at, raw)
+           VALUES (?,?,?,?,?,?,?,?,?,?)
+           ON CONFLICT(repo, key) DO UPDATE SET
+             issue_type=excluded.issue_type, status=excluded.status, assignee=excluded.assignee,
+             priority=excluded.priority, created_at=excluded.created_at, started_at=excluded.started_at,
+             resolved_at=excluded.resolved_at, raw=excluded.raw""",
+        rows,
+    )
+
+
 def load_pull_requests(conn: sqlite3.Connection, repo: str):
     import pandas as pd
     return pd.read_sql_query("SELECT * FROM pull_requests WHERE repo = ?", conn, params=(repo,))
@@ -120,8 +159,14 @@ def load_deployments(conn: sqlite3.Connection, repo: str):
     return pd.read_sql_query("SELECT * FROM deployments WHERE repo = ?", conn, params=(repo,))
 
 
+def load_issues(conn: sqlite3.Connection, repo: str):
+    import pandas as pd
+    return pd.read_sql_query("SELECT * FROM issues WHERE repo = ?", conn, params=(repo,))
+
+
 def known_repos(conn: sqlite3.Connection) -> list[str]:
     cur = conn.execute(
-        "SELECT DISTINCT repo FROM pull_requests UNION SELECT DISTINCT repo FROM releases UNION SELECT DISTINCT repo FROM deployments"
+        "SELECT DISTINCT repo FROM pull_requests UNION SELECT DISTINCT repo FROM releases "
+        "UNION SELECT DISTINCT repo FROM deployments UNION SELECT DISTINCT repo FROM issues"
     )
     return [row[0] for row in cur.fetchall()]

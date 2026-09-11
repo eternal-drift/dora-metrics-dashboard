@@ -1,5 +1,7 @@
-"""Generate synthetic-but-realistic PR/release data so the dashboard can be
-demoed without hitting the live GitHub API or needing a token.
+"""Generate synthetic-but-realistic PR/release/issue data so the dashboard
+can be demoed without hitting the live GitHub API (or a Jira instance --
+there is no live Jira ingestion in this project; issues are Jira-shaped
+synthetic events used to exercise WIP/throughput/MTTR).
 
 Usage: python scripts/seed_demo_data.py [repo_name]
 """
@@ -33,9 +35,13 @@ def _iso(dt: datetime) -> str:
     return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+ASSIGNEES = ["amir", "bea", "chidi", "dana", "eli"]
+
+
 def main() -> None:
-    prs, releases = [], []
+    prs, releases, issues = [], [], []
     pr_number = 1
+    issue_seq = 1
 
     # Simulate improving cycle time over the 26 weeks (mirrors a real flow-metrics story).
     for week in range(WEEKS):
@@ -59,6 +65,31 @@ def main() -> None:
             })
             pr_number += 1
 
+            # Jira-style story/bug backing the PR: filed a bit before work
+            # started, moved in_progress at PR-open time, resolved at merge.
+            filed = created - timedelta(hours=random.uniform(2, 72))
+            issues.append({
+                "key": f"ENG-{issue_seq}", "issue_type": random.choice(["story", "story", "bug"]),
+                "status": "done", "assignee": random.choice(ASSIGNEES),
+                "priority": random.choice(["P2", "P3", "P3", "P4"]),
+                "created_at": _iso(filed), "started_at": _iso(created), "resolved_at": _iso(merged),
+            })
+            issue_seq += 1
+
+        # A trickle of backlog/in-progress work that never resolves in this
+        # window, so WIP has something to show besides completed items.
+        for _ in range(random.randint(0, 2)):
+            filed = week_start + timedelta(days=random.uniform(0, 6))
+            still_open = random.random() < 0.6
+            issues.append({
+                "key": f"ENG-{issue_seq}", "issue_type": "story",
+                "status": "in_progress" if still_open else "backlog",
+                "assignee": random.choice(ASSIGNEES), "priority": random.choice(["P3", "P4"]),
+                "created_at": _iso(filed), "started_at": _iso(filed) if still_open else None,
+                "resolved_at": None,
+            })
+            issue_seq += 1
+
         # Release roughly weekly; failure rate improves over time too.
         release_time = week_start + timedelta(days=6, hours=random.uniform(0, 12))
         releases.append({"id": week + 1, "tag_name": f"v0.{week + 1}.0", "published_at": _iso(release_time)})
@@ -66,23 +97,36 @@ def main() -> None:
         failure_chance = 0.35 - 0.3 * maturity  # 35% -> 5%
         if random.random() < failure_chance:
             hotfix_created = release_time + timedelta(hours=random.uniform(1, 20))
+            hotfix_merged = hotfix_created + timedelta(hours=1)
             prs.append({
                 "number": pr_number, "state": "closed", "created_at": _iso(hotfix_created),
-                "merged_at": _iso(hotfix_created + timedelta(hours=1)),
-                "closed_at": _iso(hotfix_created + timedelta(hours=1)),
+                "merged_at": _iso(hotfix_merged), "closed_at": _iso(hotfix_merged),
                 "first_review_at": _iso(hotfix_created + timedelta(minutes=20)),
                 "additions": random.randint(2, 20), "deletions": random.randint(0, 10),
                 "title": random.choice(HOTFIX_TITLES),
             })
             pr_number += 1
 
+            # Incident issue backing the hotfix: MTTR improves as the team
+            # matures, same story the PR cycle-time trend already tells.
+            mttr_hours = max(0.5, random.gauss(6 - 4 * maturity, 1.5))
+            detected = release_time + timedelta(minutes=random.uniform(5, 45))
+            resolved = detected + timedelta(hours=mttr_hours)
+            issues.append({
+                "key": f"ENG-{issue_seq}", "issue_type": "incident", "status": "done",
+                "assignee": random.choice(ASSIGNEES), "priority": "P1",
+                "created_at": _iso(detected), "started_at": _iso(detected), "resolved_at": _iso(resolved),
+            })
+            issue_seq += 1
+
     with db.connect() as conn:
         db.upsert_pull_requests(conn, REPO, prs)
         db.upsert_releases(conn, REPO, releases)
         db.upsert_deployments(conn, REPO, [])
+        db.upsert_issues(conn, REPO, issues)
 
     from dora.config import settings
-    print(f"Seeded {len(prs)} PRs and {len(releases)} releases for {REPO} into {settings.db_path}")
+    print(f"Seeded {len(prs)} PRs, {len(releases)} releases, and {len(issues)} issues for {REPO} into {settings.db_path}")
 
 
 if __name__ == "__main__":
