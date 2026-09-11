@@ -1,0 +1,8 @@
+[project]
+name = "dora-dashboard"
+version = "0.1.0"
+description = "Engineering flow metrics (DORA + PR cycle time) computed from GitHub API data"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

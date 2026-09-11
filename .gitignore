@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Local data — regenerated via ingest or seed_demo_data.py
+dora.db
+*.db
+
+.env
+.DS_Store

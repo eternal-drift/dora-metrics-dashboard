@@ -1,0 +1,7 @@
+requests>=2.31
+pandas>=2.1
+streamlit>=1.35
+plotly>=5.20
+python-dateutil>=2.9
+python-dotenv>=1.0
+typer>=0.12
