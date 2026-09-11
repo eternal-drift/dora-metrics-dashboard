@@ -1,0 +1,210 @@
+<title>dora-metrics-dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500&display=swap');
+
+  :root{
+    --bg:      #0a0e13;
+    --card:    #10151c;
+    --line:    #212a34;
+    --text:    #eef1f5;
+    --muted:   #7c8794;
+    --accent:  #ff7a33;
+    --good:    #3fcf8e;
+    --font-mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+    --font-sans: 'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+    font-family:var(--font-sans);
+  }
+
+  .card{
+    position:relative;
+    width:1200px;
+    height:630px;
+    background:var(--card);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    padding:72px 76px 56px;
+  }
+
+  /* graph-paper telemetry backdrop */
+  .card::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:40px 40px;
+    opacity:.35;
+    -webkit-mask-image: radial-gradient(ellipse 900px 500px at 30% 20%, #000 40%, transparent 78%);
+            mask-image: radial-gradient(ellipse 900px 500px at 30% 20%, #000 40%, transparent 78%);
+  }
+
+  .top{ position:relative; }
+
+  .kicker{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-family:var(--font-mono);
+    font-size:13px;
+    font-weight:500;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:28px;
+  }
+  .kicker .dot{
+    width:7px; height:7px; border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 0 4px rgba(255,122,51,.16);
+  }
+
+  .wordmark-row{
+    display:flex;
+    align-items:flex-end;
+    gap:28px;
+  }
+  h1{
+    margin:0;
+    font-family:var(--font-mono);
+    font-weight:700;
+    font-size:60px;
+    line-height:1;
+    letter-spacing:-.01em;
+    color:var(--text);
+    white-space:nowrap;
+  }
+  h1 span{ color:var(--accent); }
+
+  .pulse{ flex:1; min-width:0; padding-bottom:10px; }
+
+  .tagline{
+    margin:22px 0 0;
+    max-width:640px;
+    font-size:20px;
+    line-height:1.5;
+    color:var(--muted);
+    text-wrap:balance;
+  }
+  .tagline b{ color:var(--text); font-weight:500; }
+
+  .tiles{
+    position:relative;
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+  }
+  .tile{
+    background:var(--card);
+    padding:22px 24px 20px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .tile .label{
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    font-weight:500;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+  .tile .row{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .tile .value{
+    font-family:var(--font-mono);
+    font-size:34px;
+    font-weight:600;
+    color:var(--text);
+    font-variant-numeric:tabular-nums;
+  }
+  .tile .delta{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    font-family:var(--font-mono);
+    font-size:13px;
+    font-weight:500;
+    color:var(--good);
+    white-space:nowrap;
+  }
+  .tile svg.spark{ width:100%; height:26px; display:block; }
+
+  .footer{
+    position:relative;
+    margin-top:20px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-family:var(--font-mono);
+    font-size:13px;
+    color:var(--muted);
+  }
+  .footer .path::before{ content:"$ "; color:var(--accent); }
+</style>
+
+<div class="card">
+  <div class="top">
+    <div class="kicker"><span class="dot"></span>Engineering Intelligence</div>
+    <div class="wordmark-row">
+      <h1>dora<span>-</span>metrics<span>-</span>dashboard</h1>
+      <svg class="pulse" viewBox="0 0 340 40" preserveAspectRatio="none">
+        <polyline points="0,20 60,20 74,20 82,4 92,36 102,20 120,20 180,20 194,20 202,4 212,36 222,20 340,20"
+          fill="none" stroke="#ff7a33" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <p class="tagline">DORA + SPACE-inspired metrics computed from real PR, release, and issue events &mdash; <b>not</b> self-reported survey scores.</p>
+  </div>
+
+  <div>
+    <div class="tiles">
+      <div class="tile">
+        <div class="label">Deploy Frequency</div>
+        <div class="row"><span class="value">1.2<span style="font-size:16px;color:var(--muted);font-weight:500">/day</span></span></div>
+        <svg class="spark" viewBox="0 0 100 26" preserveAspectRatio="none"><polyline points="0,20 15,19 30,15 45,16 60,10 75,9 90,4 100,3" fill="none" stroke="var(--good)" stroke-width="2"/></svg>
+        <div class="delta">&#9650; up 2.4&times; in 26wk</div>
+      </div>
+      <div class="tile">
+        <div class="label">Lead Time</div>
+        <div class="row"><span class="value">18<span style="font-size:16px;color:var(--muted);font-weight:500">h</span></span></div>
+        <svg class="spark" viewBox="0 0 100 26" preserveAspectRatio="none"><polyline points="0,3 15,6 30,9 45,12 60,16 75,19 90,22 100,23" fill="none" stroke="var(--good)" stroke-width="2"/></svg>
+        <div class="delta">&#9660; down from 48h</div>
+      </div>
+      <div class="tile">
+        <div class="label">Change Failure Rate</div>
+        <div class="row"><span class="value">6<span style="font-size:16px;color:var(--muted);font-weight:500">%</span></span></div>
+        <svg class="spark" viewBox="0 0 100 26" preserveAspectRatio="none"><polyline points="0,4 15,7 30,10 45,13 60,17 75,20 90,23 100,24" fill="none" stroke="var(--good)" stroke-width="2"/></svg>
+        <div class="delta">&#9660; down from 35%</div>
+      </div>
+      <div class="tile">
+        <div class="label">MTTR</div>
+        <div class="row"><span class="value">4.2<span style="font-size:16px;color:var(--muted);font-weight:500">h</span></span></div>
+        <svg class="spark" viewBox="0 0 100 26" preserveAspectRatio="none"><polyline points="0,3 15,7 30,10 45,13 60,16 75,19 90,21 100,22" fill="none" stroke="var(--good)" stroke-width="2"/></svg>
+        <div class="delta">&#9660; down from 6h</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span class="path">streamlit run dashboard.py</span>
+    <span>WIP &middot; Throughput &middot; MTTR &middot; PR Cycle Time</span>
+  </div>
+</div>
