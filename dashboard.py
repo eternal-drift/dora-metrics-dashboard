@@ -75,7 +75,7 @@ if freq_df.empty:
     st.info("No releases or deployments recorded for this repo.")
 else:
     fig = px.bar(freq_df, x="period", y="deployments")
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(fig, width="stretch", key="deployment_frequency_chart")
 
 # --- PR cycle time ----------------------------------------------------------
 st.subheader("PR Cycle Time")
@@ -85,7 +85,7 @@ else:
     weekly = cycle.set_index("merged_at_dt").resample("W")["cycle_time_hours"].median().reset_index()
     fig = px.line(weekly, x="merged_at_dt", y="cycle_time_hours", markers=True,
                   labels={"merged_at_dt": "Week", "cycle_time_hours": "Median cycle time (h)"})
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(fig, width="stretch", key="pr_cycle_time_chart")
     st.caption("Time-to-first-review is also stored per PR; see the raw table below.")
 
 # --- Lead time for changes ---------------------------------------------------
@@ -94,7 +94,7 @@ if lead.empty:
     st.info("No releases to compute lead time against. Ingest releases, or adapt `lead_time_for_changes` to use deployments.")
 else:
     fig = px.histogram(lead, x="lead_time_hours", nbins=30)
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(fig, width="stretch", key="lead_time_chart")
 
 # --- Change failure rate ------------------------------------------------
 st.subheader("Change Failure Rate (proxy)")
@@ -136,7 +136,7 @@ else:
         st.info("No started issues to compute WIP from.")
     else:
         fig = px.line(wip_df, x="period", y="wip", markers=True)
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, width="stretch", key="wip_chart")
         st.caption("Snapshot of open (started, unresolved) issues at the end of each period, not a period average.")
 
     st.subheader("Throughput")
@@ -144,7 +144,7 @@ else:
         st.info("No resolved issues recorded.")
     else:
         fig = px.bar(throughput_df, x="period", y="resolved")
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, width="stretch", key="throughput_chart")
 
     st.subheader("MTTR (proxy)")
     st.caption("Hours from an incident issue's creation to its resolution. No separate detection-time signal is available, so this overstates MTTR if incidents are filed after detection has already begun.")
@@ -167,19 +167,19 @@ else:
         if space["activity"].empty:
             st.info("No data.")
         else:
-            st.plotly_chart(px.bar(space["activity"], x="period", y="prs_opened"), width="stretch")
+            st.plotly_chart(px.bar(space["activity"], x="period", y="prs_opened"), width="stretch", key="space_activity_chart")
     with sc2:
         st.markdown("**Performance** (issues resolved)")
         if space["performance"].empty:
             st.info("No data.")
         else:
-            st.plotly_chart(px.bar(space["performance"], x="period", y="resolved"), width="stretch")
+            st.plotly_chart(px.bar(space["performance"], x="period", y="resolved"), width="stretch", key="space_performance_chart")
     with sc3:
         st.markdown("**Efficiency** (median PR cycle time)")
         if space["efficiency"].empty:
             st.info("No data.")
         else:
-            st.plotly_chart(px.line(space["efficiency"], x="period", y="median_cycle_time_hours", markers=True), width="stretch")
+            st.plotly_chart(px.line(space["efficiency"], x="period", y="median_cycle_time_hours", markers=True), width="stretch", key="space_efficiency_chart")
     st.caption("Satisfaction and Communication: not measurable from GitHub/Jira event data alone (would need survey or chat/comment ingestion) — omitted rather than faked.")
 
     with st.expander("Raw issue data"):
