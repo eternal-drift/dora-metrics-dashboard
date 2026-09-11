@@ -99,6 +99,8 @@ Environment variables (see `dora/config.py`):
 | `ANTHROPIC_API_KEY` | — | Enables the AI Engineering Advisor (see below) |
 | `ADVISOR_MODEL` | `claude-opus-5` | Model used by the Advisor |
 | `DATABASE_URL` | — (falls back to SQLite at `DORA_DB_PATH`) | Set to a `postgresql://...` URL to use Postgres instead of SQLite |
+| `QUEUE_URL` | — (falls back to an in-process queue) | Set to a `redis://...` URL to use Redis as the event queue |
+| `GITHUB_WEBHOOK_SECRET` | — | If set, required to validate `POST /webhooks/github` deliveries |
 
 ## Metrics API
 
@@ -109,13 +111,28 @@ uvicorn dora.api.main:app --reload
 curl localhost:8000/repos/acme/widgets/health
 ```
 
+## Webhook ingestion (event queue)
+
+Polling (`cli.py ingest`) is still the right tool for a first backfill, but ongoing updates
+can flow in via GitHub webhooks instead of re-polling: `POST /webhooks/github` (configure
+this URL as a repo webhook, events: Pull requests, Pull request reviews, Releases,
+Deployment statuses) verifies the signature, enqueues the event, and returns immediately.
+A separate worker process applies queued events to storage:
+
+```bash
+python cli.py worker
+```
+
+See [docs/adr/0006-webhook-ingestion-and-event-queue.md](docs/adr/0006-webhook-ingestion-and-event-queue.md).
+
 ## Running everything with Docker Compose
 
-Brings up Postgres, the Metrics API, and the Streamlit dashboard as one stack:
+Brings up Postgres, Redis, the Metrics API, the event-queue worker, and the Streamlit
+dashboard as one stack:
 
 ```bash
 docker compose up --build
-# dashboard: http://localhost:8501, API: http://localhost:8000
+# dashboard: http://localhost:8501, API: http://localhost:8000, webhooks: http://localhost:8000/webhooks/github
 ```
 
 Seed or ingest against the same Postgres instance from the host (the compose file

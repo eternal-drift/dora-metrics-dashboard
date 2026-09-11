@@ -28,7 +28,7 @@ years of history).
 
 | Layer | Assumption | Breaks at | Mitigation |
 |---|---|---|---|
-| Ingestion | Polling GitHub/Jira APIs per repo on a schedule | ~hundreds of repos on a shared polling budget hits API rate limits | Move to webhook-driven, event-triggered ingestion (push, not pull) — see [roadmap.md](roadmap.md) |
+| Ingestion | Polling GitHub/Jira APIs per repo on a schedule for backfill; **webhook-driven, event-triggered ingestion now implemented** for ongoing updates (`dora/api/webhooks.py` — see [ADR 0006](adr/0006-webhook-ingestion-and-event-queue.md)) | A single in-process `InMemoryQueue` (the dev/test default) doesn't scale past one process or survive a restart | Set `QUEUE_URL` to run Redis as the queue (already the case in `docker-compose.yml`); move to SQS/Kafka if durability/ordering guarantees beyond Redis are needed |
 | Queue | Single queue, no partitioning | High event volume across many orgs causes head-of-line blocking for unrelated teams | Partition by org/repo so one noisy repo can't delay another's metrics |
 | Metrics processors | Recompute full aggregates on each event | Recompute cost grows with history length, not just event rate | Incremental/streaming aggregation (append to rollups, don't replay full history) once event volume justifies it |
 | Storage | Postgres row store | Metric-query patterns are heavily time-series/aggregate (sum/avg over date ranges) — row stores degrade on this pattern as row count grows | ClickHouse (or equivalent columnar store) for computed-metric rollups; Postgres stays authoritative for raw events/entities |

@@ -50,6 +50,16 @@ def ingest(repo: str, limit: int = 500, environment: str = None):
 
 
 @app.command()
+def worker(max_events: int = None):
+    """Run the event-queue consumer (dora/worker.py) that applies webhook-sourced
+    events to storage. Runs forever unless --max-events is given (useful for testing)."""
+    from dora.worker import run_worker
+
+    n = run_worker(max_events=max_events)
+    typer.echo(f"Processed {n} event(s).")
+
+
+@app.command()
 def advise(question: str):
     """Ask the AI Engineering Advisor a question (needs ANTHROPIC_API_KEY)."""
     from dora.advisor.advisor import Advisor

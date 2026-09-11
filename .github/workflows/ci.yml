@@ -57,3 +57,67 @@ jobs:
           assert r.status_code == 200, r.text
           print('Postgres-backed API smoke test passed:', list(r.json().keys()))
           "
+
+  test-webhook-queue:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: dora
+          POSTGRES_PASSWORD: dora
+          POSTGRES_DB: dora
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U dora"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Smoke-test webhook -> Redis -> worker -> Postgres
+        env:
+          DATABASE_URL: postgresql://dora:dora@localhost:5432/dora
+          QUEUE_URL: redis://localhost:6379/0
+        run: |
+          python -c "
+          from fastapi.testclient import TestClient
+          from dora.api.main import app
+          from dora.worker import run_worker
+          from dora.storage import db
+
+          client = TestClient(app)
+          payload = {
+              'repository': {'full_name': 'acme/widgets'},
+              'pull_request': {
+                  'number': 1, 'state': 'closed', 'merged_at': '2024-01-01T12:00:00Z',
+                  'created_at': '2024-01-01T00:00:00Z', 'closed_at': '2024-01-01T12:00:00Z',
+                  'additions': 10, 'deletions': 2,
+              },
+          }
+          r = client.post('/webhooks/github', json=payload, headers={'X-GitHub-Event': 'pull_request'})
+          assert r.status_code == 200 and r.json()['status'] == 'queued', r.text
+
+          processed = run_worker(max_events=1)
+          assert processed == 1, processed
+
+          with db.connect() as conn:
+              prs = db.load_pull_requests(conn, 'acme/widgets')
+          assert len(prs) == 1 and prs.iloc[0]['number'] == 1
+          print('Webhook -> Redis -> worker -> Postgres smoke test passed')
+          "

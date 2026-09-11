@@ -15,6 +15,16 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   api:
     build: .
     command: uvicorn dora.api.main:app --host 0.0.0.0 --port 8000
@@ -22,9 +32,25 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql://dora:dora@postgres:5432/dora
+      QUEUE_URL: redis://redis:6379/0
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET:-}
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build: .
+    command: python -m dora.worker
+    environment:
+      DATABASE_URL: postgresql://dora:dora@postgres:5432/dora
+      QUEUE_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   dashboard:

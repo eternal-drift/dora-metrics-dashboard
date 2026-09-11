@@ -182,6 +182,20 @@ def upsert_issues(conn, repo: str, issues: list[dict]) -> None:
     """), rows)
 
 
+def record_first_review(conn, repo: str, number: int, submitted_at: str | None) -> None:
+    """Set first_review_at for a PR only if it's unset or later than submitted_at --
+    used by the webhook/worker path (dora/worker.py), which sees reviews as
+    separate pull_request_review events rather than fetching them inline the
+    way `cli.py ingest` does."""
+    if not submitted_at:
+        return
+    conn.execute(sa.text("""
+        UPDATE pull_requests SET first_review_at = :submitted_at
+        WHERE repo = :repo AND number = :number
+          AND (first_review_at IS NULL OR first_review_at > :submitted_at)
+    """), {"repo": repo, "number": number, "submitted_at": submitted_at})
+
+
 def load_pull_requests(conn, repo: str):
     import pandas as pd
     return pd.read_sql_query(sa.text("SELECT * FROM pull_requests WHERE repo = :repo"), conn, params={"repo": repo})

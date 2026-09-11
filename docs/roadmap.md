@@ -41,10 +41,17 @@ items build on earlier ones.
 - **GitHub Actions CI** — `.github/workflows/ci.yml` runs the full test suite against both SQLite and a real Postgres service container, plus a seed+API smoke test on the Postgres job.
 - **Not yet done**: connection pooling tuning for concurrent load, migrations tooling (Alembic) — schema changes currently rely on `CREATE TABLE IF NOT EXISTS`, fine for additive changes, not for altering existing columns.
 
+## Done: webhook ingestion + event queue
+
+- **Webhook receiver** (`dora/api/webhooks.py`) — verifies GitHub's HMAC signature, normalizes `pull_request`/`pull_request_review`/`release`/`deployment_status` payloads, enqueues, returns without touching the DB.
+- **Event queue** (`dora/queue/`) — `InMemoryQueue` (dev/test default) or `RedisQueue` (`QUEUE_URL=redis://...`), one interface. See [ADR 0006](adr/0006-webhook-ingestion-and-event-queue.md) for why Redis instead of SQS/Kafka for now.
+- **Processor** (`dora/worker.py`, `python cli.py worker`) — separate process, same `db.upsert_*` write path as polling ingest.
+- Verified as real decoupling, not just structure: run as independent Docker containers (`docker-compose.yml` adds `redis` and `worker` services) communicating only through Redis, including surviving an independent worker rebuild/restart mid-flow.
+- Polling (`cli.py ingest`) is kept for first-time backfill; webhooks only cover events going forward.
+- **Not yet done**: SQS/Kafka (deferred per ADR 0006 until real durability/ordering guarantees are needed), an outbox pattern or retry queue for the known `pull_request_review`-before-`pull_request` ordering gap, dead-letter handling for poison messages ([scalability-assumptions.md](scalability-assumptions.md)).
+
 ## Then: production-shaped infra
 
-- Event queue (SQS/Kafka) decoupling ingestion from metric processing — see [scalability-assumptions.md](scalability-assumptions.md) for the trigger conditions.
-- Webhook-driven ingestion replacing polling.
 - OpenTelemetry instrumentation + Prometheus/Grafana for the platform's own operational health (not to be confused with the engineering metrics the platform computes about other teams).
 - ClickHouse for metric rollups at higher data volume ([scalability-assumptions.md](scalability-assumptions.md)).
 - Terraform for the above, once the architecture is stable enough that infra-as-code isn't chasing a moving target.

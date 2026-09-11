@@ -28,5 +28,12 @@ class Settings:
     anthropic_api_key: str = field(default_factory=lambda: os.getenv("ANTHROPIC_API_KEY", ""))
     advisor_model: str = field(default_factory=lambda: os.getenv("ADVISOR_MODEL", "claude-opus-5"))
 
+    # Webhook-driven ingestion + event queue (dora/webhooks, dora/queue, dora/worker).
+    # See docs/adr/0006-webhook-ingestion-and-event-queue.md.
+    github_webhook_secret: str = field(default_factory=lambda: os.getenv("GITHUB_WEBHOOK_SECRET", ""))
+    # Set QUEUE_URL to a redis:// URL to use Redis as the queue; unset falls back to an
+    # in-process queue (dev/test only -- not durable, not shared across processes).
+    queue_url: str = field(default_factory=lambda: os.getenv("QUEUE_URL", ""))
+
 
 settings = Settings()

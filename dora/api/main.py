@@ -12,12 +12,14 @@ from __future__ import annotations
 from fastapi import FastAPI, HTTPException
 
 from dora.advisor import context
+from dora.api.webhooks import router as webhooks_router
 
 app = FastAPI(
     title="DORA Metrics API",
     description="Read-only engineering metrics: DORA, PR cycle time, WIP, throughput, MTTR, SPACE-inspired indicators.",
     version="0.1.0",
 )
+app.include_router(webhooks_router)
 
 
 def _require_repo(repo: str) -> None:
