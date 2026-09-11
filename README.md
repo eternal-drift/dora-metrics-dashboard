@@ -96,6 +96,26 @@ Environment variables (see `dora/config.py`):
 | `GITHUB_TOKEN` | — | GitHub API auth |
 | `DORA_DB_PATH` | `dora.db` | SQLite file location |
 | `DORA_HOTFIX_WINDOW_HOURS` | `24` | Change-failure-rate window |
+| `ANTHROPIC_API_KEY` | — | Enables the AI Engineering Advisor (see below) |
+| `ADVISOR_MODEL` | `claude-opus-5` | Model used by the Advisor |
+
+## AI Engineering Advisor
+
+Ask natural-language questions about engineering health — "why did PR cycle time increase?",
+"are we trading deployment frequency for reliability?", "summarize engineering health for the
+VP" — and get answers grounded in the same metrics as the dashboard, via Claude tool calling
+(`dora/advisor/`). Every answer carries the same caveats shown in [docs/metrics.md](docs/metrics.md);
+the Advisor refuses to rank or evaluate individual engineers (see [docs/threat-model.md](docs/threat-model.md)).
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+python cli.py advise "which repo has the worst change failure rate?"
+```
+
+Or use the chat panel at the bottom of the Streamlit dashboard. See
+[docs/roadmap.md](docs/roadmap.md) for what's intentionally out of scope for v0 (no
+vector-DB RAG — caveats are embedded directly in the system prompt; no conversation
+persistence).
 
 ## Docs
 

@@ -14,20 +14,24 @@ items build on earlier ones.
 - Streamlit dashboard
 - Strategy artifacts: ADRs, metric definitions, VP dashboard, engineering-health scorecard, sample quarterly review, cost model, threat model, scalability assumptions (this pass)
 
-## Next: AI Engineering Advisor (highest narrative value, builds on existing metrics)
+## Done: AI Engineering Advisor v0
 
-- FastAPI endpoint (or an in-Streamlit chat panel first, as a fast v0) that
-  takes a natural-language question and answers it using `dora.metrics` as
-  tool-calling functions (not by hand-writing SQL per question).
-- RAG context: the metric caveats in [metrics.md](metrics.md) must be
-  retrievable by the Advisor so answers carry the right caveats
-  automatically — the Advisor should never state a proxy metric as fact
-  without the caveat attached (see [ADR 0002](adr/0002-proxy-metrics-over-missing-signals.md)).
-- Target the sample questions directly: cycle-time regression cause,
-  bottleneck-service identification, deploy-frequency-vs-reliability
-  tradeoff check, unhealthy-WIP detection, VP-level health summary.
-- Guardrails from day one, not retrofitted: no per-person ranking without
-  the caveat framing described in [threat-model.md](threat-model.md).
+- `dora/advisor/` — Claude tool-calling agent over `dora.metrics` (via a thin,
+  unit-tested `context.py` snapshot layer), a Streamlit chat panel, and a
+  `python cli.py advise "..."` command. See [ADR 0005](adr/0005-advisor-tool-calling-over-vector-rag.md)
+  for why v0 skips vector-DB RAG in favor of tool calling + an embedded
+  caveat corpus.
+- Every tool result carries its own caveat field; the system prompt
+  requires caveats to be stated whenever a metric is used, and refuses
+  per-person ranking — implementing [threat-model.md](threat-model.md)'s
+  top risk as a prompt-level guardrail, not an afterthought.
+- Answers the five target questions directly (cycle-time regression,
+  bottleneck identification, deploy-frequency-vs-reliability tradeoff,
+  unhealthy WIP, VP-level summary) — see the system prompt's explicit
+  per-question guidance in `dora/advisor/prompts.py`.
+- **Not yet done**: FastAPI endpoint (currently in-process only, called
+  directly from Streamlit/CLI), conversation persistence, vector-DB RAG for
+  a larger knowledge corpus, streaming responses.
 
 ## Then: real backing services
 

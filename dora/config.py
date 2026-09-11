@@ -19,5 +19,9 @@ class Settings:
     hotfix_window_hours: int = int(os.getenv("DORA_HOTFIX_WINDOW_HOURS", "24"))
     hotfix_label_keywords: tuple = ("hotfix", "revert", "rollback", "incident")
 
+    # AI Engineering Advisor (dora/advisor) -- see docs/roadmap.md.
+    anthropic_api_key: str = field(default_factory=lambda: os.getenv("ANTHROPIC_API_KEY", ""))
+    advisor_model: str = field(default_factory=lambda: os.getenv("ADVISOR_MODEL", "claude-opus-5"))
+
 
 settings = Settings()

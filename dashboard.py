@@ -184,3 +184,43 @@ else:
 
     with st.expander("Raw issue data"):
         st.dataframe(issues, width="stretch")
+
+st.divider()
+st.header("AI Engineering Advisor")
+st.caption(
+    "Ask questions like \"why did PR cycle time increase?\" or \"summarize engineering "
+    "health for the VP\" — answers are grounded in the metrics above via tool calling, "
+    "and always carry the same caveats shown on this dashboard. See docs/roadmap.md."
+)
+
+from dora.config import settings as _settings  # noqa: E402
+
+if not _settings.anthropic_api_key:
+    st.info("Set `ANTHROPIC_API_KEY` to enable the AI Advisor (see README.md).")
+else:
+    if "advisor_display" not in st.session_state:
+        st.session_state.advisor_display = []
+    if "advisor_history" not in st.session_state:
+        st.session_state.advisor_history = []
+
+    for role, text in st.session_state.advisor_display:
+        with st.chat_message(role):
+            st.markdown(text)
+
+    question = st.chat_input(f"Ask about {repo}...")
+    if question:
+        st.session_state.advisor_display.append(("user", question))
+        with st.chat_message("user"):
+            st.markdown(question)
+
+        from dora.advisor.advisor import Advisor
+
+        with st.chat_message("assistant"):
+            with st.spinner("Thinking..."):
+                advisor = Advisor()
+                scoped_question = f"[Current dashboard repo: {repo}] {question}"
+                answer, st.session_state.advisor_history = advisor.ask(
+                    scoped_question, st.session_state.advisor_history
+                )
+                st.markdown(answer)
+        st.session_state.advisor_display.append(("assistant", answer))

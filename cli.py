@@ -49,5 +49,19 @@ def ingest(repo: str, limit: int = 500, environment: str = None):
     typer.echo(f"Done. Stored to {settings.db_path}.")
 
 
+@app.command()
+def advise(question: str):
+    """Ask the AI Engineering Advisor a question (needs ANTHROPIC_API_KEY)."""
+    from dora.advisor.advisor import Advisor
+
+    try:
+        advisor = Advisor()
+    except RuntimeError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1)
+    answer, _ = advisor.ask(question)
+    typer.echo(answer)
+
+
 if __name__ == "__main__":
     app()
