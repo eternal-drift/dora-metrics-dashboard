@@ -35,5 +35,12 @@ class Settings:
     # in-process queue (dev/test only -- not durable, not shared across processes).
     queue_url: str = field(default_factory=lambda: os.getenv("QUEUE_URL", ""))
 
+    # Observability (dora/observability) -- operational health of this platform itself,
+    # not the engineering metrics it computes about other teams. See docs/adr/0007.
+    otel_exporter_otlp_endpoint: str = field(default_factory=lambda: os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", ""))
+    otel_service_name_api: str = field(default_factory=lambda: os.getenv("OTEL_SERVICE_NAME_API", "dora-api"))
+    otel_service_name_worker: str = field(default_factory=lambda: os.getenv("OTEL_SERVICE_NAME_WORKER", "dora-worker"))
+    worker_metrics_port: int = int(os.getenv("WORKER_METRICS_PORT", "9100"))
+
 
 settings = Settings()

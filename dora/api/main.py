@@ -10,9 +10,13 @@ Run: uvicorn dora.api.main:app --reload
 from __future__ import annotations
 
 from fastapi import FastAPI, HTTPException
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from dora.advisor import context
 from dora.api.webhooks import router as webhooks_router
+from dora.config import settings
+from dora.observability.tracing import setup_tracing
 
 app = FastAPI(
     title="DORA Metrics API",
@@ -20,6 +24,10 @@ app = FastAPI(
     version="0.1.0",
 )
 app.include_router(webhooks_router)
+
+setup_tracing(settings.otel_service_name_api)
+FastAPIInstrumentor.instrument_app(app)
+Instrumentator().instrument(app).expose(app)  # GET /metrics -- Prometheus scrape target
 
 
 def _require_repo(repo: str) -> None:

@@ -10,6 +10,7 @@ import json
 from fastapi import APIRouter, Header, HTTPException, Request
 
 from dora.config import settings
+from dora.observability.tracing import inject_trace_context
 from dora.queue import get_queue
 from dora.webhooks import normalize_event, verify_signature
 
@@ -37,5 +38,9 @@ async def github_webhook(
     if event is None:
         return {"status": "ignored", "event_type": x_github_event}
 
+    # FastAPIInstrumentor already opened a span for this request; propagate
+    # it through the queue so the worker's processing span (a different
+    # process, often a different container) joins the same trace.
+    inject_trace_context(event)
     get_queue().enqueue(event)
     return {"status": "queued", "event_type": x_github_event, "repo": event["repo"]}

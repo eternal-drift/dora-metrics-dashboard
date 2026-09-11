@@ -1,0 +1,64 @@
+{
+  "title": "DORA Platform Health",
+  "uid": "dora-platform-health",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "API request rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        { "expr": "sum(rate(http_requests_total[1m])) by (handler, status)", "legendFormat": "{{handler}} {{status}}" }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "API p95 request duration",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_highr_seconds_bucket[5m])) by (le))", "legendFormat": "p95" }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Worker events processed / sec (by kind)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        { "expr": "sum(rate(dora_worker_events_processed_total[1m])) by (kind)", "legendFormat": "{{kind}}" }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Worker event processing latency (p95, by kind)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(dora_worker_event_processing_seconds_bucket[5m])) by (le, kind))", "legendFormat": "{{kind}}" }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Queue depth",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "targets": [
+        { "expr": "dora_worker_queue_depth", "legendFormat": "queue depth" }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Worker events failed / sec (by kind)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "targets": [
+        { "expr": "sum(rate(dora_worker_events_failed_total[5m])) by (kind)", "legendFormat": "{{kind}}" }
+      ]
+    }
+  ]
+}

@@ -50,9 +50,16 @@ items build on earlier ones.
 - Polling (`cli.py ingest`) is kept for first-time backfill; webhooks only cover events going forward.
 - **Not yet done**: SQS/Kafka (deferred per ADR 0006 until real durability/ordering guarantees are needed), an outbox pattern or retry queue for the known `pull_request_review`-before-`pull_request` ordering gap, dead-letter handling for poison messages ([scalability-assumptions.md](scalability-assumptions.md)).
 
+## Done: OpenTelemetry + Prometheus + Grafana
+
+- **Metrics** — `prometheus-fastapi-instrumentator` on the API, hand-written `prometheus_client` metrics in the worker (`dora/observability/metrics.py`): events processed/failed by kind, processing-time histogram, queue depth.
+- **Tracing** — OpenTelemetry (`dora/observability/tracing.py`) with explicit context propagation across the event queue, so a webhook request and the worker turn that processes it join one trace across two containers. See [ADR 0007](adr/0007-observability-otel-prometheus-grafana.md).
+- **Backend** — Grafana Tempo (traces) + Prometheus (metrics) + Grafana (provisioned datasources + a starter dashboard: API rate/latency, worker throughput/latency by kind, queue depth, failure rate) — `observability/` + `docker-compose.yml`.
+- Verified as real, not just wired: full 7-service stack brought up together, a live webhook driven through it, and the resulting trace confirmed in Tempo to span both `dora-api` and `dora-worker` under one `trace_id`.
+- **Not yet done**: alerting rules, SLO dashboards, trace sampling config (currently samples everything), log correlation with `trace_id`.
+
 ## Then: production-shaped infra
 
-- OpenTelemetry instrumentation + Prometheus/Grafana for the platform's own operational health (not to be confused with the engineering metrics the platform computes about other teams).
 - ClickHouse for metric rollups at higher data volume ([scalability-assumptions.md](scalability-assumptions.md)).
 - Terraform for the above, once the architecture is stable enough that infra-as-code isn't chasing a moving target.
 

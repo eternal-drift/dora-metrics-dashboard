@@ -101,6 +101,8 @@ Environment variables (see `dora/config.py`):
 | `DATABASE_URL` | — (falls back to SQLite at `DORA_DB_PATH`) | Set to a `postgresql://...` URL to use Postgres instead of SQLite |
 | `QUEUE_URL` | — (falls back to an in-process queue) | Set to a `redis://...` URL to use Redis as the event queue |
 | `GITHUB_WEBHOOK_SECRET` | — | If set, required to validate `POST /webhooks/github` deliveries |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | — (falls back to console export) | Set to a `host:4317` OTLP endpoint (e.g. `tempo:4317`) to export traces there instead |
+| `WORKER_METRICS_PORT` | `9100` | Port the worker exposes Prometheus metrics on |
 
 ## Metrics API
 
@@ -125,14 +127,24 @@ python cli.py worker
 
 See [docs/adr/0006-webhook-ingestion-and-event-queue.md](docs/adr/0006-webhook-ingestion-and-event-queue.md).
 
+## Observability (OpenTelemetry + Prometheus + Grafana)
+
+The API and worker are instrumented for the *platform's own* operational health — request
+rate/latency, events processed/failed, processing time, queue depth — separate from the
+engineering metrics the platform computes about other teams' repos. Traces propagate through
+the event queue, so a webhook delivery and the worker turn that processes it show up as one
+trace across two services. See [docs/adr/0007](docs/adr/0007-observability-otel-prometheus-grafana.md).
+
 ## Running everything with Docker Compose
 
-Brings up Postgres, Redis, the Metrics API, the event-queue worker, and the Streamlit
-dashboard as one stack:
+Brings up Postgres, Redis, Tempo, Prometheus, Grafana, the Metrics API, the event-queue
+worker, and the Streamlit dashboard as one stack:
 
 ```bash
 docker compose up --build
 # dashboard: http://localhost:8501, API: http://localhost:8000, webhooks: http://localhost:8000/webhooks/github
+# Grafana: http://localhost:3000 (anonymous admin access, for local dev)
+# Prometheus: http://localhost:9090, Tempo: http://localhost:3200
 ```
 
 Seed or ingest against the same Postgres instance from the host (the compose file

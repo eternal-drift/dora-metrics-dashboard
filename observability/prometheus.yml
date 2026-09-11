@@ -1,0 +1,10 @@
+global:
+  scrape_interval: 10s
+
+scrape_configs:
+  - job_name: dora-api
+    static_configs:
+      - targets: ["api:8000"]
+  - job_name: dora-worker
+    static_configs:
+      - targets: ["worker:9100"]
